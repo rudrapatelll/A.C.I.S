@@ -1,0 +1,41 @@
+global:
+  scrape_interval: 15s      # How frequently to scrape targets
+  evaluation_interval: 15s  # How frequently to evaluate rules
+  external_labels:
+    monitor: 'acis-monitor'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files (optional - for alerting rules)
+rule_files:
+  # - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # ACIS Streamlit Application Metrics
+  - job_name: 'acis-app'
+    static_configs:
+      - targets: ['acis-app:8501']
+        labels:
+          service: 'acis-detection-system'
+          environment: 'production'
+    metrics_path: '/metrics'
+    scrape_interval: 5s  # More frequent for real-time detection metrics
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Grafana monitoring (optional)
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
