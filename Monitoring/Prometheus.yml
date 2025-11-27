@@ -19,7 +19,7 @@ scrape_configs:
   # ACIS Streamlit Application Metrics
   - job_name: 'acis-app'
     static_configs:
-      - targets: ['acis-app:8501']
+      - targets: ['acis-app:8000']
         labels:
           service: 'acis-detection-system'
           environment: 'production'

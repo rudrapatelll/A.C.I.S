@@ -29,7 +29,8 @@ try:
     from metrics_server import (
         record_inference, update_detection_metrics, 
         record_low_confidence, record_detection_error,
-        record_shap_generation, video_processing_time, 
+        record_shap_generation, video_processing_time,
+        update_average_confidence, record_customer_feedback  
     )
     METRICS_ENABLED = True
 except ImportError:
@@ -562,6 +563,9 @@ class ACISDetector:
         if METRICS_ENABLED:
             total_processing_time = time.time() - video_start_time
             video_processing_time.set(total_processing_time)
+            # Update average confidence metric
+            if performance_summary.get('avg_confidence'):
+                update_average_confidence(performance_summary['avg_confidence'])
         
         return performance_summary
     
@@ -661,7 +665,12 @@ def save_feedback(rating: int, feedback_text: str, video_name: str):
         combined_feedback = new_feedback
     
     combined_feedback.to_csv(feedback_file, index=False)
+    # Record feedback to Prometheus
+    if METRICS_ENABLED:
+        record_customer_feedback(rating)
+
     return True
+
 
 
 def generate_pdf_report(results: Dict[str, Any], video_name: str) -> bytes:

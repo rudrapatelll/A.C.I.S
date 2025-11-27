@@ -29,13 +29,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application files
 COPY app.py .
+COPY metrics_server.py .
 
 # Create necessary directories
 RUN mkdir -p uploads outputs models data
 
-# Expose Streamlit port
-EXPOSE 8501
-EXPOSE 8000
+# Expose ports
+EXPOSE 8501 8000
 
 # Set environment variables
 ENV STREAMLIT_SERVER_HEADLESS=true \
@@ -47,5 +47,17 @@ ENV STREAMLIT_SERVER_HEADLESS=true \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8501/_stcore/health || exit 1
 
-# Run Streamlit app
-CMD ["streamlit", "run", "app.py", "--server.address", "0.0.0.0"]
+# Create startup script to launch both metrics server and Streamlit
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🚀 Starting ACIS services..."\n\
+echo "📊 Starting Prometheus metrics server on port 8000..."\n\
+python3 -c "from metrics_server import start_metrics_server_thread; import time; start_metrics_server_thread(); time.sleep(3)" &\n\
+METRICS_PID=$!\n\
+echo "✅ Metrics server started (PID: $METRICS_PID)"\n\
+echo "🎨 Starting Streamlit app on port 8501..."\n\
+streamlit run app.py --server.address 0.0.0.0\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Run startup script
+CMD ["/bin/bash", "/app/start.sh"]
